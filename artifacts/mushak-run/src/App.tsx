@@ -191,7 +191,7 @@ function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY:
   const phase = run.elapsed % 48;
   const timeClass = phase > 34 ? "night" : phase > 23 ? "dusk" : "";
   const playerStyle = {
-    bottom: `calc(12% + ${Math.min(playerY, .46) * 100}%)`,
+    bottom: `calc(12% + ${Math.min(playerY, .68) * 100}%)`,
     "--growth-scale": Math.min(1.3, 0.84 + run.laddus * 0.02),
   } as CSSProperties;
   return (
@@ -288,7 +288,7 @@ function App() {
   const [playerY, setPlayerY] = useState(0);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
-  const runRef = useRef<RunState>({ playerY: 0, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
+  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
   const lastPaintRef = useRef(0);
@@ -301,11 +301,11 @@ function App() {
   };
 
   const startGame = useCallback(() => {
-    runRef.current = { playerY: 0, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] };
+    runRef.current = { playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] };
     setScore(runRef.current.score);
     setLaddus(runRef.current.laddus);
     setStage(1);
-    setPlayerY(0);
+    setPlayerY(.36);
     setSignature(false);
     setScreen("playing");
   }, []);
@@ -318,10 +318,10 @@ function App() {
   const hop = useCallback(() => {
     if (screen === "playing") {
       const run = runRef.current;
-      if (run.playerY <= .025 && run.velocity <= 0) {
-        run.velocity = .06;
-        if (sound && typeof window !== "undefined" && "vibrate" in navigator) navigator.vibrate(7);
-      }
+      // Flap at any height, like a bird game, so Ganesha can stay in the
+      // center lane while the mountain gates move past him.
+      run.velocity = .06;
+      if (sound && typeof window !== "undefined" && "vibrate" in navigator) navigator.vibrate(7);
     } else if (screen === "paused") setScreen("playing");
   }, [screen, sound]);
 
@@ -375,7 +375,7 @@ function App() {
       const obstacleHit = run.obstacles.some((obstacle) => {
         const gapBottom = obstacle.gapY - obstacle.gapSize / 2;
         const gapTop = obstacle.gapY + obstacle.gapSize / 2;
-        const overlapsPlayer = obstacle.x < .28 && obstacle.x + .09 > .08;
+        const overlapsPlayer = obstacle.x < .61 && obstacle.x + .09 > .4;
         return overlapsPlayer && (playerTop > gapTop || run.playerY < gapBottom);
       });
       if (obstacleHit) {
@@ -389,7 +389,7 @@ function App() {
       // Match the forgiving feel of a bird-style game: the laddu can touch
       // either the rider or Mushak, and its visual position uses the same
       // baseline as the physics.
-      const collected = run.trail.filter((laddu) => laddu.x < .29 && laddu.x > .06 && Math.abs((run.playerY + .045) - laddu.y) < .14);
+      const collected = run.trail.filter((laddu) => laddu.x < .63 && laddu.x > .39 && Math.abs((run.playerY + .045) - laddu.y) < .14);
       if (collected.length) {
         run.laddus += collected.length;
         setLaddus(run.laddus);

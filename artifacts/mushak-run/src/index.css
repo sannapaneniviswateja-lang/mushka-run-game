@@ -132,7 +132,7 @@
 .snowcaps { position: absolute; bottom: 48%; left: 0; width: 100%; height: 12%; background: rgba(248,253,255,.96); clip-path: polygon(0 100%, 15% 24%, 28% 84%, 43% 5%, 59% 75%, 72% 27%, 88% 84%, 100% 40%, 100% 54%, 88% 96%, 72% 46%, 59% 94%, 43% 30%, 28% 100%, 15% 44%, 0 100%); opacity: .9; }
 .foreground-slope { position: absolute; bottom: -2%; left: -5%; width: 110%; height: 38%; background: #d3e8f4; clip-path: polygon(0 37%, 18% 27%, 37% 42%, 55% 22%, 78% 38%, 100% 19%, 100% 100%, 0 100%); }
 .path-line { position: absolute; z-index: 2; bottom: 21%; left: 0; width: 100%; height: 3px; background: rgba(72, 141, 180, .38); transform: rotate(-2deg); }
-.demo-rider { position: absolute; z-index: 4; left: 24%; bottom: 26%; width: 112px; animation: hop-demo 2.2s ease-in-out infinite; }
+.demo-rider { position: absolute; z-index: 4; left: 42%; bottom: 26%; width: 112px; animation: hop-demo 2.2s ease-in-out infinite; }
 .demo-laddu { position: absolute; z-index: 4; right: 21%; bottom: 44%; width: 30px; height: 30px; border-radius: 50%; background: #e6a537; border: 4px solid #f7d47b; box-shadow: 0 0 0 9px rgba(239,184,61,.15), 0 0 28px rgba(243,190,56,.76); animation: floaty 2s ease-in-out infinite; }
 .demo-laddu.two { right: 31%; bottom: 51%; animation-delay: .7s; transform: scale(.68); }
 .flake { position: absolute; z-index: 3; border-radius: 50%; background: rgba(255,255,255,.92); box-shadow: 0 0 5px rgba(255,255,255,.8); animation-name: snowfall; animation-timing-function: linear; animation-iteration-count: infinite; pointer-events: none; }
@@ -174,7 +174,7 @@
 .rider-sprite-shell.stage-3 .rider-sprite { filter: saturate(1.18) contrast(1.04) drop-shadow(0 9px 6px rgba(50,46,42,.24)); }
 .rider-sprite-shell.stage-4 .rider-sprite { filter: saturate(1.28) contrast(1.05) drop-shadow(0 0 15px rgba(248,198,77,.72)) drop-shadow(0 9px 6px rgba(50,46,42,.24)); }
 .rider-aura { position: absolute; z-index: 0; left: 12%; top: 9%; width: 76%; aspect-ratio: 1; border-radius: 50%; background: rgba(255,214,111,.28); box-shadow: 0 0 28px rgba(255,201,74,.55); animation: aura-breathe 1.8s ease-in-out infinite; }
-.runner { position: absolute; z-index: 5; left: 14%; bottom: 12%; width: clamp(78px, 11vw, 122px); transform-origin: left bottom; transition: transform .45s cubic-bezier(.2,.9,.25,1); }
+.runner { position: absolute; z-index: 5; left: 43%; bottom: 12%; width: clamp(78px, 11vw, 122px); transform-origin: center bottom; transition: transform .45s cubic-bezier(.2,.9,.25,1); }
 .runner.stage-1 { transform: scale(calc(var(--growth-scale, .84) * .94)); }
 .runner.stage-2 { transform: scale(var(--growth-scale, .84)); }
 .runner.stage-3 { transform: scale(calc(var(--growth-scale, .84) * 1.04)); }
@@ -253,7 +253,7 @@
   .game-menu { padding-top: 52px; gap: 34px; }
   .hero-copy { font-size: 14px; }
   .scene-card { min-height: 315px; border-radius: 21px; }
-  .demo-rider { width: 98px; left: 20%; }
+  .demo-rider { width: 98px; left: 39%; }
   .sun { width: 65px; height: 65px; }
   .menu-foot { align-items: flex-start; flex-direction: column; }
   .game-topbar { align-items: flex-start; }
@@ -264,7 +264,7 @@
   .stage-node i { right: -4px; }
   .stage-score { display: none; }
   .playfield { min-height: 350px; height: 69vh; border-radius: 18px; }
-  .runner { left: 11%; width: 94px; }
+  .runner { left: 40%; width: 94px; }
   .pipe { width: 37px; }
   .tap-hint { display: none; }
   .results-card { padding: 30px 18px; }
