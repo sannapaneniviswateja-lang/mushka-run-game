@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Mushak Run"
+description = "A polished one-button Himalayan endless runner where Ganesha rides Mushak, collects glowing laddus, grows through transformation stages, and journeys toward Maha Ganesha."
+version = "1.0.0"
+id = "artifacts/mushak-run"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18334
+
+[services.development]
+run = "pnpm --filter @workspace/mushak-run run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mushak-run", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mushak-run/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18334"
+BASE_PATH = "/"
