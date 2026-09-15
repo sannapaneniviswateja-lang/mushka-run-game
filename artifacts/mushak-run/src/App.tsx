@@ -288,7 +288,7 @@ function App() {
   const [playerY, setPlayerY] = useState(0);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
-  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
+  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
   const lastPaintRef = useRef(0);
@@ -301,7 +301,20 @@ function App() {
   };
 
   const startGame = useCallback(() => {
-    runRef.current = { playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] };
+    runRef.current = {
+      playerY: .36,
+      velocity: 0,
+      distance: 0,
+      score: 0,
+      laddus: 0,
+      speed: .24,
+      elapsed: 0,
+      nextObstacle: .72,
+      nextLaddu: .72,
+      stage: 1,
+      obstacles: [{ id: obstacleIdRef.current++, x: .74, gapY: .5, gapSize: .3 }],
+      trail: [],
+    };
     setScore(runRef.current.score);
     setLaddus(runRef.current.laddus);
     setStage(1);
@@ -354,7 +367,6 @@ function App() {
       run.velocity -= .0036 * dt;
       if (run.playerY <= 0) { run.playerY = 0; run.velocity = 0; }
       run.distance += run.speed * dt;
-      run.speed = Math.min(.42, run.speed + .00012 * dt);
       run.nextObstacle -= run.speed * dt / 70;
       run.nextLaddu -= run.speed * dt / 70;
       if (run.nextObstacle <= 0) {
@@ -362,7 +374,7 @@ function App() {
         const gapY = pattern === 1 ? .5 : pattern === 2 ? .58 : .44;
         const gapSize = Math.max(.24, .3 - Math.floor(run.distance / 180) * .01);
         run.obstacles.push({ id: obstacleIdRef.current++, x: 1.05, gapY, gapSize });
-        run.nextObstacle = 1.3 + ((Math.floor(run.distance) % 4) * .18);
+        run.nextObstacle = .72 + ((Math.floor(run.distance) % 2) * .08);
       }
       if (run.nextLaddu <= 0) {
         const arc = Math.floor(run.distance / 50) % 3;
