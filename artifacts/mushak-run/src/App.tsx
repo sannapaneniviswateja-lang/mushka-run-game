@@ -18,6 +18,7 @@ type RunState = {
   laddus: number;
   speed: number;
   elapsed: number;
+  liftTime: number;
   nextObstacle: number;
   nextLaddu: number;
   stage: number;
@@ -288,7 +289,7 @@ function App() {
   const [playerY, setPlayerY] = useState(0);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
-  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
+  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, liftTime: 0, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
   const lastPaintRef = useRef(0);
@@ -309,6 +310,7 @@ function App() {
       laddus: 0,
       speed: .24,
       elapsed: 0,
+      liftTime: 0,
       nextObstacle: .72,
       nextLaddu: .72,
       stage: 1,
@@ -333,7 +335,10 @@ function App() {
       const run = runRef.current;
       // Flap at any height, like a bird game, so Ganesha can stay in the
       // center lane while the mountain gates move past him.
-      run.velocity = .06;
+      // Start with a gentle lift and keep applying it briefly so the click
+      // feels like a smooth upward glide instead of a sudden jump.
+      run.velocity = Math.max(run.velocity, .0022);
+      run.liftTime = .34;
       if (sound && typeof window !== "undefined" && "vibrate" in navigator) navigator.vibrate(7);
     } else if (screen === "paused") setScreen("playing");
   }, [screen, sound]);
@@ -362,9 +367,15 @@ function App() {
       const dt = Math.min(34, now - lastFrameRef.current) / 16.67;
       lastFrameRef.current = now;
       run.elapsed += dt / 60;
+      if (run.liftTime > 0) {
+        run.velocity += .00014 * dt;
+        run.liftTime = Math.max(0, run.liftTime - dt / 60);
+      }
       run.playerY += run.velocity * dt;
       // Keep the arc gentle and readable instead of snapping down like a stone.
-      run.velocity -= .0036 * dt;
+      // Keep Ganesha centered for a moment, then let him drift down gently
+      // when the player gives no response.
+      run.velocity -= .00006 * dt;
       if (run.playerY <= 0) { run.playerY = 0; run.velocity = 0; }
       run.distance += run.speed * dt;
       run.nextObstacle -= run.speed * dt / 70;
