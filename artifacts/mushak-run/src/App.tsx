@@ -8,7 +8,7 @@ const queryClient = new QueryClient();
 
 type Screen = "menu" | "tutorial" | "playing" | "paused" | "gameover" | "settings" | "hall";
 type HallEntry = { score: number; laddus: number; stage: number; date: string };
-type Obstacle = { id: number; x: number; height: number };
+type Obstacle = { id: number; x: number; gapY: number; gapSize: number };
 type TrailLaddu = { id: number; x: number; y: number };
 type RunState = {
   playerY: number;
@@ -76,7 +76,7 @@ function seededFlakes(count: number) {
   }));
 }
 
-const flakes = seededFlakes(44);
+const flakes = seededFlakes(30);
 
 function MushakRider({ stage = 1, className = "", style }: { stage?: number; className?: string; style?: CSSProperties }) {
   return (
@@ -148,7 +148,7 @@ function Menu({ best, sound, onSound, onStart, onSettings, onHall }: { best: num
         <div>
           <div className="eyebrow">A one-button mountain story</div>
           <h1 className="hero-title">Run.<br /><em>Grow.</em><br />Glow.</h1>
-          <p className="hero-copy">Guide <strong>Ganesha and Mushak</strong> through a hand-painted Himalayan dawn. Hop over the stones, collect every glowing laddu, and climb toward the summit.</p>
+          <p className="hero-copy">Guide <strong>Ganesha and Mushak</strong> through a hand-painted Himalayan dawn. Fly through the snowy mountain gates, collect every glowing laddu, and climb toward the summit.</p>
           <div className="hero-actions">
             <button className="primary-btn" onClick={onStart} data-testid="button-start-run"><Play size={17} fill="currentColor" /> Begin the chase</button>
           </div>
@@ -179,7 +179,7 @@ function Tutorial({ onBegin, onBack, sound, onSound }: { onBegin: () => void; on
         <div className="tutorial-art"><Mountains /><MushakRider className="runner" stage={1} /></div>
         <div className="eyebrow">First run · 20 seconds</div>
         <h1>One hop.<br />Many little wonders.</h1>
-        <p>Tap anywhere, click the route, or press <span className="keycap">Space</span><span className="keycap">↑</span>. Stay light over the stones. Every laddu helps you grow.</p>
+        <p>Tap anywhere, click the route, or press <span className="keycap">Space</span><span className="keycap">↑</span>. Thread the snowy gates. Every laddu helps you grow.</p>
         <button className="primary-btn" onClick={onBegin} data-testid="button-tutorial-begin"><ArrowUp size={17} /> I'm ready</button>
         <button className="text-btn" onClick={onBack} data-testid="button-tutorial-back" style={{ marginLeft: 10 }}><ChevronLeft size={15} /> Back</button>
       </section>
@@ -192,7 +192,7 @@ function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY:
   const timeClass = phase > 34 ? "night" : phase > 23 ? "dusk" : "";
   const playerStyle = {
     bottom: `calc(12% + ${Math.min(playerY, .46) * 100}%)`,
-    "--growth-scale": Math.min(1.18, 0.94 + run.laddus * 0.012),
+    "--growth-scale": Math.min(1.3, 0.84 + run.laddus * 0.02),
   } as CSSProperties;
   return (
     <div className={`playfield ${timeClass}`} onPointerDown={onHop} role="application" aria-label="Mushak Run gameplay. Tap, click, or press Space to hop." data-testid="game-playfield">
@@ -200,7 +200,16 @@ function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY:
       <SceneDecor />
       <div className="game-track" />
       {run.trail.map((laddu) => <div className="laddu" key={laddu.id} style={{ left: `${laddu.x * 100}%`, bottom: `calc(12% + ${laddu.y * 100}%)` }} data-testid={`laddu-${laddu.id}`} />)}
-      {run.obstacles.map((obstacle) => <div className="obstacle" key={obstacle.id} style={{ left: `${obstacle.x * 100}%`, height: `${obstacle.height}px` }} data-testid={`obstacle-${obstacle.id}`} />)}
+      {run.obstacles.map((obstacle) => {
+        const gapBottom = obstacle.gapY - obstacle.gapSize / 2;
+        const gapTop = obstacle.gapY + obstacle.gapSize / 2;
+        return (
+          <div className="pipe-pair" key={obstacle.id} data-testid={`obstacle-${obstacle.id}`}>
+            <div className="pipe pipe-top" style={{ left: `${obstacle.x * 100}%`, height: `${Math.max(18, 88 - gapTop * 100)}%` }} />
+            <div className="pipe pipe-bottom" style={{ left: `${obstacle.x * 100}%`, height: `${Math.max(14, gapBottom * 100)}%` }} />
+          </div>
+        );
+      })}
       <MushakRider className={`runner stage-${run.stage}`} stage={run.stage} style={playerStyle} />
       <div className="tap-hint"><ArrowUp size={12} /> hop to keep the route</div>
       {signature && <div className="signature"><div className="signature-card"><div className="seal"><Sparkles size={47} /></div><strong>Maha Ganesha</strong><span>the summit remembers courage</span></div></div>}
@@ -279,9 +288,10 @@ function App() {
   const [playerY, setPlayerY] = useState(0);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
-  const runRef = useRef<RunState>({ playerY: 0, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, nextObstacle: 1.35, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
+  const runRef = useRef<RunState>({ playerY: 0, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
+  const lastPaintRef = useRef(0);
   const obstacleIdRef = useRef(0);
   const ladduIdRef = useRef(0);
   const toggle = (key: string, value: boolean, setter: (next: boolean) => void) => {
@@ -291,7 +301,7 @@ function App() {
   };
 
   const startGame = useCallback(() => {
-    runRef.current = { playerY: 0, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, nextObstacle: 1.35, nextLaddu: .72, stage: 1, obstacles: [], trail: [] };
+    runRef.current = { playerY: 0, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .2, elapsed: 0, nextObstacle: 1.3, nextLaddu: .72, stage: 1, obstacles: [], trail: [] };
     setScore(runRef.current.score);
     setLaddus(runRef.current.laddus);
     setStage(1);
@@ -349,8 +359,10 @@ function App() {
       run.nextLaddu -= run.speed * dt / 70;
       if (run.nextObstacle <= 0) {
         const pattern = Math.floor(run.distance / 80) % 3;
-        run.obstacles.push({ id: obstacleIdRef.current++, x: 1.05, height: pattern === 1 ? 54 : pattern === 2 ? 76 : 65 });
-        run.nextObstacle = 1.35 + ((Math.floor(run.distance) % 4) * .18);
+        const gapY = pattern === 1 ? .5 : pattern === 2 ? .58 : .44;
+        const gapSize = Math.max(.24, .3 - Math.floor(run.distance / 180) * .01);
+        run.obstacles.push({ id: obstacleIdRef.current++, x: 1.05, gapY, gapSize });
+        run.nextObstacle = 1.3 + ((Math.floor(run.distance) % 4) * .18);
       }
       if (run.nextLaddu <= 0) {
         const arc = Math.floor(run.distance / 50) % 3;
@@ -359,7 +371,13 @@ function App() {
       }
       run.obstacles.forEach((obstacle) => { obstacle.x -= run.speed * dt / 70; });
       run.trail.forEach((laddu) => { laddu.x -= run.speed * dt / 70; });
-      const obstacleHit = run.obstacles.some((obstacle) => obstacle.x < .27 && obstacle.x > .07 && run.playerY < (obstacle.height > 70 ? .18 : .12));
+      const playerTop = run.playerY + .15;
+      const obstacleHit = run.obstacles.some((obstacle) => {
+        const gapBottom = obstacle.gapY - obstacle.gapSize / 2;
+        const gapTop = obstacle.gapY + obstacle.gapSize / 2;
+        const overlapsPlayer = obstacle.x < .28 && obstacle.x + .09 > .08;
+        return overlapsPlayer && (playerTop > gapTop || run.playerY < gapBottom);
+      });
       if (obstacleHit) {
         const finalScore = Math.floor(run.distance * 1.12) + run.laddus * 25;
         run.score = finalScore;
@@ -390,8 +408,11 @@ function App() {
           window.setTimeout(() => setSignature(false), reducedMotion ? 1200 : 4300);
         }
       }
-      setPlayerY(run.playerY);
-      setScore(run.score);
+      if (now - lastPaintRef.current >= 24) {
+        lastPaintRef.current = now;
+        setPlayerY(run.playerY);
+        setScore(run.score);
+      }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
