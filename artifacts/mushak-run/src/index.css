@@ -47,7 +47,7 @@
   --sidebar-foreground: 0 0% 100%;
   --sidebar-border: 211 42% 34%;
   --app-font-sans: "DM Sans", ui-sans-serif, sans-serif;
-  --app-font-serif: "Bree Serif", Georgia, serif;
+  --app-font-serif: "Quador", "Cormorant Garamond", "Bodoni 72", Georgia, serif;
   --app-font-mono: "Space Mono", monospace;
   --radius: 1.1rem;
   --shadow-soft: 0 20px 50px rgba(36, 91, 122, .14);
@@ -123,6 +123,7 @@
 .mini-stat svg { color: hsl(var(--primary)); }
 .mini-stat strong { display: block; color: hsl(var(--foreground)); font-family: var(--app-font-sans); font-size: 14px; letter-spacing: 0; }
 .scene-card { position: relative; min-height: 500px; border: 1px solid rgba(43, 90, 124, .16); border-radius: 27px; overflow: hidden; background: #dff2fc; box-shadow: var(--shadow-soft); }
+.scene-card:before { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: url("/ganesha-watercolor.png") center 12% / min(72%, 320px) auto no-repeat; opacity: .22; mix-blend-mode: multiply; }
 .scene-card:after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(120deg, rgba(255,255,255,.22), transparent 36%, rgba(29, 51, 66, .1)); }
 .scene-label { position: absolute; z-index: 4; left: 22px; top: 20px; display: inline-flex; align-items: center; gap: 8px; color: rgba(24,66,96,.72); font-family: var(--app-font-mono); font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
 .scene-label span { width: 7px; height: 7px; border-radius: 50%; background: hsl(var(--primary)); animation: pulse-ring 2s ease infinite; }
@@ -160,6 +161,7 @@
 .playfield.dusk { background: linear-gradient(#b7d5ec 0%, #9dc4dd 57%, #83acc8 100%); }
 .playfield.night { background: linear-gradient(#456987 0%, #5c83a1 57%, #6f9db8 100%); }
 .playfield:before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: .2; background-image: radial-gradient(rgba(255,255,255,.9) .7px, transparent .8px); background-size: 19px 19px; pointer-events: none; }
+.playfield:after { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: url("/ganesha-watercolor.png") center 11% / min(64%, 280px) auto no-repeat; opacity: .1; mix-blend-mode: multiply; }
 .playfield .sun { top: 10%; right: 11%; width: clamp(55px, 9vw, 102px); height: clamp(55px, 9vw, 102px); }
 .playfield.dusk .sun { background: #edf8ff; box-shadow: 0 0 48px rgba(225,245,255,.55); }
 .playfield.night .sun { background: #d9efff; box-shadow: 0 0 30px rgba(211,239,255,.42); }
