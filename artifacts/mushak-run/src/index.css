@@ -91,6 +91,7 @@
 @keyframes snowfall { 0% { opacity: 0; transform: translate3d(-12px, -12vh, 0) rotate(0deg); } 12% { opacity: .86; } 100% { opacity: .18; transform: translate3d(28px, 116vh, 0) rotate(180deg); } }
 @keyframes hop-demo { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-23px); } }
 @keyframes rider-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes rider-flap { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-2px) rotate(-2deg); } }
 @keyframes slide-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes signature { 0% { opacity: 0; transform: scale(.8); } 20%,80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
 @keyframes laddu-popup { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.75); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1.02); } }
@@ -183,18 +184,15 @@
 .game-track { position: absolute; z-index: 2; left: 0; right: 0; bottom: 12%; height: 3px; background: rgba(61, 121, 157, .32); }
 .rider-sprite-shell { position: relative; display: block; pointer-events: none; }
 .rider-bob { display: block; animation: rider-bob 1.35s ease-in-out infinite; }
-.rider-motion { position: relative; display: block; transform: scaleY(var(--squash-y, 1)); transition: transform .12s ease-out; }
-.rider-sprite { position: relative; z-index: 1; display: block; width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 7px 5px rgba(50,46,42,.22)); transition: filter .35s ease; }
+.rider-motion { position: relative; display: block; transform: rotate(var(--tilt, 0deg)) scaleY(var(--squash-y, 1)); transition: transform .12s ease-out; }
+.rider-sprite { position: relative; z-index: 1; display: block; width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 7px 5px rgba(50,46,42,.22)); transition: filter .35s ease; animation: rider-flap .48s steps(2, end) infinite; transform-origin: center 70%; }
 .rider-sprite-shell.stage-1 .rider-sprite { filter: saturate(.92) drop-shadow(0 7px 5px rgba(50,46,42,.22)); }
 .rider-sprite-shell.stage-2 .rider-sprite { filter: saturate(1.08) drop-shadow(0 8px 5px rgba(50,46,42,.22)); }
 .rider-sprite-shell.stage-3 .rider-sprite { filter: saturate(1.18) contrast(1.04) drop-shadow(0 9px 6px rgba(50,46,42,.24)); }
 .rider-sprite-shell.stage-4 .rider-sprite { filter: saturate(1.28) contrast(1.05) drop-shadow(0 0 15px rgba(248,198,77,.72)) drop-shadow(0 9px 6px rgba(50,46,42,.24)); }
 .rider-aura { position: absolute; z-index: 0; left: 12%; top: 9%; width: 76%; aspect-ratio: 1; border-radius: 50%; background: rgba(255,214,111,.28); box-shadow: 0 0 28px rgba(255,201,74,.55); animation: aura-breathe 1.8s ease-in-out infinite; }
-.runner { position: absolute; z-index: 5; left: 43%; bottom: 12%; width: clamp(64px, 19%, 88px); transform-origin: center bottom; transition: transform .45s cubic-bezier(.2,.9,.25,1); }
-.runner.stage-1 { transform: scale(var(--growth-scale, .84)); }
-.runner.stage-2 { transform: scale(var(--growth-scale, .84)); }
-.runner.stage-3 { transform: scale(var(--growth-scale, .84)); }
-.runner.stage-4 { transform: scale(var(--growth-scale, .84)); }
+.runner { position: absolute; z-index: 5; left: 50%; bottom: 12%; width: clamp(64px, 19%, 88px); transform-origin: center bottom; transform: translateX(-50%) scale(var(--growth-scale, .84)); transition: transform .45s cubic-bezier(.2,.9,.25,1); }
+.runner.stage-1, .runner.stage-2, .runner.stage-3, .runner.stage-4 { transform: translateX(-50%) scale(var(--growth-scale, .84)); }
 .demo-rider.stage-1 { transform: scale(.88); }
 .demo-rider.stage-2 { transform: scale(1); }
 .demo-rider.stage-3 { transform: scale(1.16); }
@@ -287,7 +285,7 @@
   .stage-node i { right: -4px; }
   .stage-score { display: none; }
   .playfield { min-height: 480px; height: min(78vh, 720px); border-radius: 18px; }
-  .runner { left: 40%; width: 94px; }
+  .runner { left: 50%; width: 94px; }
   .pipe { width: 37px; }
   .tap-hint { display: none; }
   .results-card { padding: 30px 18px; }

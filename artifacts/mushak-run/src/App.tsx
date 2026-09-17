@@ -199,9 +199,11 @@ function Tutorial({ onBegin, onBack, sound, onSound }: { onBegin: () => void; on
 function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY: number; signature: boolean; onHop: () => void }) {
   const phase = run.elapsed % 48;
   const timeClass = phase > 34 ? "night" : phase > 23 ? "dusk" : "";
+  const tilt = Math.max(-18, Math.min(18, -run.velocity * 5200));
   const playerStyle = {
     bottom: `calc(12% + ${Math.min(playerY, .68) * 100}%)`,
     "--growth-scale": run.growthScale,
+    "--tilt": `${tilt}deg`,
     "--squash-y": run.velocity > .0005 ? 1.05 : run.velocity < -.0005 ? .95 : 1,
   } as CSSProperties;
   return (
