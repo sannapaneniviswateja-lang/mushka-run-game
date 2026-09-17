@@ -394,8 +394,8 @@ function App() {
       // center lane while the mountain gates move past him.
       // Start with a gentle lift and keep applying it briefly so the click
       // feels like a smooth upward glide instead of a sudden jump.
-      run.velocity = Math.max(run.velocity, .0022);
-      run.liftTime = .34;
+      run.velocity = Math.max(run.velocity, .00145);
+      run.liftTime = .24;
       if (sound && typeof window !== "undefined" && "vibrate" in navigator) navigator.vibrate(7);
     } else if (screen === "paused") setScreen("playing");
   }, [countdown, screen, sound]);
@@ -438,7 +438,7 @@ function App() {
         .map((effect) => ({ ...effect, life: effect.life - dt / 60 }))
         .filter((effect) => effect.life > 0);
       if (run.liftTime > 0) {
-        run.velocity += .00014 * dt;
+        run.velocity += .00008 * dt;
         run.liftTime = Math.max(0, run.liftTime - dt / 60);
       }
       run.playerY += run.velocity * dt;
@@ -459,7 +459,7 @@ function App() {
       }
       if (run.nextLaddu <= 0) {
         const arc = Math.floor(run.distance / 50) % 3;
-        run.trail.push({ id: ladduIdRef.current++, x: 1.04, y: arc === 0 ? .08 : arc === 1 ? .24 : .34 });
+        run.trail.push({ id: ladduIdRef.current++, x: 1.04, y: arc === 0 ? .38 : arc === 1 ? .45 : .52 });
         run.nextLaddu = .55 + (Math.floor(run.distance) % 3) * .13;
       }
       run.obstacles.forEach((obstacle) => { obstacle.x -= run.speed * dt / 70; });
