@@ -196,7 +196,7 @@ function Tutorial({ onBegin, onBack, sound, onSound }: { onBegin: () => void; on
   );
 }
 
-function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY: number; signature: boolean; onHop: () => void }) {
+function GameScene({ run, playerY, signature, countdown, onHop }: { run: RunState; playerY: number; signature: boolean; countdown: number | null; onHop: () => void }) {
   const phase = run.elapsed % 48;
   const timeClass = phase > 34 ? "night" : phase > 23 ? "dusk" : "";
   const tilt = Math.max(-18, Math.min(18, -run.velocity * 5200));
@@ -233,6 +233,7 @@ function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY:
       })}
       <MushakRider className={`runner stage-${run.stage}`} stage={run.stage} style={playerStyle} />
       <div className="tap-hint"><ArrowUp size={12} /> hop to keep the route</div>
+      {countdown !== null && <div className="countdown-overlay" aria-live="assertive"><strong>{countdown}</strong><span>get ready</span></div>}
       {signature && <div className="signature"><div className="signature-card"><div className="seal"><Sparkles size={47} /></div><strong>Maha Ganesha</strong><span>the summit remembers courage</span></div></div>}
       <div className="hud-message" key={`${run.stage}-${signature}`}>{signature ? "" : run.stage > 1 && run.elapsed < 2 ? STAGES[run.stage - 1].name : ""}</div>
     </div>
@@ -307,6 +308,7 @@ function App() {
   const [laddus, setLaddus] = useState(0);
   const [stage, setStage] = useState(1);
   const [playerY, setPlayerY] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
   const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, liftTime: 0, growthScale: .84, growthTarget: .84, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [], effects: [] });
@@ -345,6 +347,7 @@ function App() {
     setLaddus(runRef.current.laddus);
     setStage(1);
     setPlayerY(.36);
+    setCountdown(4);
     setSignature(false);
     setScreen("playing");
   }, []);
@@ -375,7 +378,7 @@ function App() {
   };
 
   const hop = useCallback(() => {
-    if (screen === "playing") {
+    if (screen === "playing" && countdown === null) {
       const run = runRef.current;
       // Flap at any height, like a bird game, so Ganesha can stay in the
       // center lane while the mountain gates move past him.
@@ -385,7 +388,7 @@ function App() {
       run.liftTime = .34;
       if (sound && typeof window !== "undefined" && "vibrate" in navigator) navigator.vibrate(7);
     } else if (screen === "paused") setScreen("playing");
-  }, [screen, sound]);
+  }, [countdown, screen, sound]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -400,7 +403,15 @@ function App() {
   }, [hop, screen]);
 
   useEffect(() => {
-    if (screen !== "playing") {
+    if (screen !== "playing" || countdown === null) return;
+    const timer = window.setTimeout(() => {
+      setCountdown((current) => current !== null && current > 1 ? current - 1 : null);
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [countdown, screen]);
+
+  useEffect(() => {
+    if (screen !== "playing" || countdown !== null) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
       return;
@@ -494,7 +505,7 @@ function App() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [playLadduChime, screen, reducedMotion]);
+  }, [countdown, playLadduChime, screen, reducedMotion]);
 
   useEffect(() => {
     if (screen !== "gameover") return;
@@ -525,7 +536,7 @@ function App() {
           <div className="score-pills"><div className="score-pill"><small>Laddus</small><b data-testid="text-live-laddus">{laddus.toString().padStart(2, "0")}</b></div><div className="score-pill"><small>Growth</small><b data-testid="text-live-stage">{stage}/4</b></div><button className="icon-btn" onClick={() => setScreen(screen === "playing" ? "paused" : "playing")} aria-label={screen === "playing" ? "Pause game" : "Resume game"} data-testid="button-pause"><Pause size={17} /></button></div>
         </div>
         <StageRail current={stage} score={score} />
-        <GameScene run={displayedRun} playerY={playerY} signature={signature} onHop={hop} />
+         <GameScene run={displayedRun} playerY={playerY} signature={signature} countdown={countdown} onHop={hop} />
         {screen === "paused" && <div className="pause-overlay"><div className="pause-card"><div className="eyebrow">The route can wait</div><h2>Breath in the snow.</h2><p>Your run is paused exactly where you left it. Return when the next hop feels right.</p><div className="modal-actions"><button className="primary-btn" onClick={() => setScreen("playing")} data-testid="button-resume"><Play size={16} fill="currentColor" /> Continue run</button><button className="text-btn" onClick={() => setScreen("menu")} data-testid="button-quit-run"><Home size={15} /> Quit to menu</button></div></div></div>}
       </div>
     </div>

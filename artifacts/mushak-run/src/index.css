@@ -96,6 +96,7 @@
 @keyframes signature { 0% { opacity: 0; transform: scale(.8); } 20%,80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
 @keyframes laddu-popup { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.75); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1.02); } }
 @keyframes sparkle-burst { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--spark-x), var(--spark-y)) scale(1); } }
+@keyframes countdown-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.65); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 
 .mushak-app {
   min-height: 100dvh;
@@ -214,6 +215,9 @@
 .sparkle-three { --spark-x: -20px; --spark-y: 20px; animation-delay: .06s; }
 .sparkle-four { --spark-x: 24px; --spark-y: 18px; animation-delay: .09s; }
 .hud-message { position: absolute; z-index: 10; top: 14%; left: 50%; color: hsl(var(--primary-foreground)); font-family: var(--app-font-serif); font-size: clamp(24px, 4vw, 48px); text-align: center; white-space: nowrap; transform: translateX(-50%); text-shadow: 0 3px 0 rgba(45,56,64,.16); animation: slide-in .5s ease both; }
+.countdown-overlay { position: absolute; z-index: 14; inset: 0; display: grid; place-content: center; justify-items: center; background: rgba(33, 72, 91, .12); pointer-events: none; }
+.countdown-overlay strong { color: #fff; font-family: var(--app-font-serif); font-size: clamp(92px, 22vw, 160px); line-height: .78; text-shadow: 0 4px 0 rgba(37, 83, 104, .26), 0 0 32px rgba(255,255,255,.45); animation: countdown-pop .9s cubic-bezier(.2,.8,.2,1) both; }
+.countdown-overlay span { margin-top: 18px; color: rgba(255,255,255,.9); font-family: var(--app-font-mono); font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
 .signature { position: absolute; z-index: 12; inset: 0; display: grid; place-items: center; background: rgba(26,46,58,.18); pointer-events: none; animation: signature 4.5s ease both; }
 .signature-card { text-align: center; color: #fff7d0; animation: floaty 2.5s ease-in-out infinite; }
 .signature-card .seal { display: grid; place-items: center; width: 110px; height: 110px; margin: 0 auto 16px; border: 2px solid #f2c65b; border-radius: 50%; box-shadow: 0 0 0 11px rgba(242,198,91,.15); background: rgba(43,56,70,.27); }
