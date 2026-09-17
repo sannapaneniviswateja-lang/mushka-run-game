@@ -10,6 +10,7 @@ type Screen = "menu" | "tutorial" | "playing" | "paused" | "gameover" | "setting
 type HallEntry = { score: number; laddus: number; stage: number; date: string };
 type Obstacle = { id: number; x: number; gapY: number; gapSize: number };
 type TrailLaddu = { id: number; x: number; y: number };
+type LadduEffect = { id: number; x: number; y: number; life: number };
 type RunState = {
   playerY: number;
   velocity: number;
@@ -19,11 +20,14 @@ type RunState = {
   speed: number;
   elapsed: number;
   liftTime: number;
+  growthScale: number;
+  growthTarget: number;
   nextObstacle: number;
   nextLaddu: number;
   stage: number;
   obstacles: Obstacle[];
   trail: TrailLaddu[];
+  effects: LadduEffect[];
 };
 
 const STAGES = [
@@ -82,13 +86,17 @@ const flakes = seededFlakes(30);
 function MushakRider({ stage = 1, className = "", style }: { stage?: number; className?: string; style?: CSSProperties }) {
   return (
     <div className={`rider-sprite-shell stage-${stage} ${className}`} style={style} role="img" aria-label="Ganesha riding Mushak">
-      {stage === 4 && <span className="rider-aura" aria-hidden="true" />}
-      <img
-        className="rider-sprite"
-        src={`${import.meta.env.BASE_URL}ganesha-mushak-rider.png`}
-        alt="Ganesha riding Mushak"
-        draggable="false"
-      />
+      <span className="rider-bob">
+        <span className="rider-motion">
+          {stage === 4 && <span className="rider-aura" aria-hidden="true" />}
+          <img
+            className="rider-sprite"
+            src={`${import.meta.env.BASE_URL}ganesha-mushak-rider.png`}
+            alt="Ganesha riding Mushak"
+            draggable="false"
+          />
+        </span>
+      </span>
     </div>
   );
 }
@@ -193,7 +201,8 @@ function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY:
   const timeClass = phase > 34 ? "night" : phase > 23 ? "dusk" : "";
   const playerStyle = {
     bottom: `calc(12% + ${Math.min(playerY, .68) * 100}%)`,
-    "--growth-scale": Math.min(1.3, 0.84 + run.laddus * 0.02),
+    "--growth-scale": run.growthScale,
+    "--squash-y": run.velocity > .0005 ? 1.05 : run.velocity < -.0005 ? .95 : 1,
   } as CSSProperties;
   return (
     <div className={`playfield ${timeClass}`} onPointerDown={onHop} role="application" aria-label="Mushak Run gameplay. Tap, click, or press Space to hop." data-testid="game-playfield">
@@ -201,6 +210,15 @@ function GameScene({ run, playerY, signature, onHop }: { run: RunState; playerY:
       <SceneDecor />
       <div className="game-track" />
       {run.trail.map((laddu) => <div className="laddu" key={laddu.id} style={{ left: `${laddu.x * 100}%`, bottom: `calc(12% + ${laddu.y * 100}%)` }} data-testid={`laddu-${laddu.id}`} />)}
+      {run.effects.map((effect) => (
+        <div className="laddu-effect" key={effect.id} style={{ left: `${effect.x * 100}%`, bottom: `calc(12% + ${effect.y * 100}%)` }} aria-hidden="true">
+          <span className="laddu-popup">+1 Laddu</span>
+          <span className="sparkle-dot sparkle-one" />
+          <span className="sparkle-dot sparkle-two" />
+          <span className="sparkle-dot sparkle-three" />
+          <span className="sparkle-dot sparkle-four" />
+        </div>
+      ))}
       {run.obstacles.map((obstacle) => {
         const gapBottom = obstacle.gapY - obstacle.gapSize / 2;
         const gapTop = obstacle.gapY + obstacle.gapSize / 2;
@@ -261,14 +279,14 @@ function HallOfFame({ entries, best, sound, onSound, onBack }: { entries: HallEn
   );
 }
 
-function Results({ score, laddus, stage, best, isNewBest, onReplay, onMenu, onHall }: { score: number; laddus: number; stage: number; best: number; isNewBest: boolean; onReplay: () => void; onMenu: () => void; onHall: () => void }) {
+function Results({ score, laddus, stage, growthScale, best, isNewBest, onReplay, onMenu, onHall }: { score: number; laddus: number; stage: number; growthScale: number; best: number; isNewBest: boolean; onReplay: () => void; onMenu: () => void; onHall: () => void }) {
   return (
     <main className="results-screen screen-enter">
       <section className="results-card">
         <div className="result-kicker">{isNewBest ? "A new summit mark" : "The route rests"}</div>
         <h1>{isNewBest ? "That was luminous." : "Beautiful run."}</h1>
         <div className="result-score" data-testid="text-result-score">{score.toString().padStart(4, "0")}</div>
-        <div className="result-grid"><div className="result-metric"><small>Laddus</small><b data-testid="text-result-laddus">{laddus}</b></div><div className="result-metric"><small>Growth</small><b>{STAGES[stage - 1].name}</b></div><div className="result-metric"><small>Best</small><b>{best.toString().padStart(4, "0")}</b></div></div>
+        <div className="result-grid"><div className="result-metric"><small>Laddus</small><b data-testid="text-result-laddus">{laddus}</b></div><div className="result-metric"><small>Final size</small><b>{Math.round((growthScale / .84) * 100)}%</b></div><div className="result-metric"><small>Best</small><b>{best.toString().padStart(4, "0")}</b></div></div>
         <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>Every hop is part of the journey. The mountains will be here when you are ready.</p>
         <div className="modal-actions" style={{ justifyContent: "center" }}><button className="primary-btn" onClick={onReplay} data-testid="button-replay"><RotateCcw size={16} /> Run it back</button><button className="text-btn" onClick={onHall} data-testid="button-results-hall"><Trophy size={15} /> Hall of fame</button><button className="text-btn" onClick={onMenu} data-testid="button-results-menu"><Home size={15} /> Menu</button></div>
       </section>
@@ -289,12 +307,13 @@ function App() {
   const [playerY, setPlayerY] = useState(0);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
-  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, liftTime: 0, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [] });
+  const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, liftTime: 0, growthScale: .84, growthTarget: .84, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [], effects: [] });
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
   const lastPaintRef = useRef(0);
   const obstacleIdRef = useRef(0);
   const ladduIdRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const toggle = (key: string, value: boolean, setter: (next: boolean) => void) => {
     const next = !value;
     setter(next);
@@ -311,11 +330,14 @@ function App() {
       speed: .24,
       elapsed: 0,
       liftTime: 0,
+      growthScale: .84,
+      growthTarget: .84,
       nextObstacle: .72,
       nextLaddu: .72,
       stage: 1,
       obstacles: [{ id: obstacleIdRef.current++, x: .74, gapY: .5, gapSize: .3 }],
       trail: [],
+      effects: [],
     };
     setScore(runRef.current.score);
     setLaddus(runRef.current.laddus);
@@ -324,6 +346,26 @@ function App() {
     setSignature(false);
     setScreen("playing");
   }, []);
+
+  const playLadduChime = useCallback(() => {
+    if (!sound || typeof window === "undefined" || !window.AudioContext) return;
+    const context = audioContextRef.current ?? new window.AudioContext();
+    audioContextRef.current = context;
+    void context.resume();
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, now);
+    oscillator.frequency.exponentialRampToValueAtTime(990, now + .12);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.08, now + .015);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + .16);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + .17);
+  }, [sound]);
 
   const beginFromMenu = () => {
     if (!readBool(STORAGE.tutorial, false)) setScreen("tutorial");
@@ -367,6 +409,11 @@ function App() {
       const dt = Math.min(34, now - lastFrameRef.current) / 16.67;
       lastFrameRef.current = now;
       run.elapsed += dt / 60;
+      const growthEase = 1 - Math.pow(.05, dt / 18);
+      run.growthScale += (run.growthTarget - run.growthScale) * growthEase;
+      run.effects = run.effects
+        .map((effect) => ({ ...effect, life: effect.life - dt / 60 }))
+        .filter((effect) => effect.life > 0);
       if (run.liftTime > 0) {
         run.velocity += .00014 * dt;
         run.liftTime = Math.max(0, run.liftTime - dt / 60);
@@ -417,6 +464,11 @@ function App() {
         run.laddus += collected.length;
         setLaddus(run.laddus);
         run.trail = run.trail.filter((laddu) => !collected.includes(laddu));
+        collected.forEach(() => {
+          run.growthTarget = Math.min(1.68, run.growthTarget * 1.07);
+          run.effects.push({ id: ladduIdRef.current++, x: .49, y: Math.min(.7, run.playerY + .15), life: .6 });
+          playLadduChime();
+        });
       }
       run.obstacles = run.obstacles.filter((obstacle) => obstacle.x > -.12);
       run.trail = run.trail.filter((laddu) => laddu.x > -.08);
@@ -440,7 +492,7 @@ function App() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [screen, reducedMotion]);
+  }, [playLadduChime, screen, reducedMotion]);
 
   useEffect(() => {
     if (screen !== "gameover") return;
@@ -462,7 +514,7 @@ function App() {
   if (screen === "tutorial") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><Tutorial sound={sound} onSound={() => toggle(STORAGE.sound, sound, setSound)} onBegin={() => { save(STORAGE.tutorial, true); startGame(); }} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "settings") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><SettingsPage {...settingsProps} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "hall") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><HallOfFame entries={hall} best={best} sound={sound} onSound={() => toggle(STORAGE.sound, sound, setSound)} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
-  if (screen === "gameover") return <Results score={runRef.current.score} laddus={runRef.current.laddus} stage={runRef.current.stage} best={best} isNewBest={isNewBest} onReplay={() => startGame()} onMenu={() => setScreen("menu")} onHall={() => setScreen("hall")} />;
+  if (screen === "gameover") return <Results score={runRef.current.score} laddus={runRef.current.laddus} stage={runRef.current.stage} growthScale={runRef.current.growthScale} best={best} isNewBest={isNewBest} onReplay={() => startGame()} onMenu={() => setScreen("menu")} onHall={() => setScreen("hall")} />;
   return (
     <div className="mushak-app">
       <div className="game-wrap screen-enter">

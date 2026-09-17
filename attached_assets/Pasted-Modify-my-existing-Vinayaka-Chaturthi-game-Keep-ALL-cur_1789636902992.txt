@@ -1,0 +1,37 @@
+Modify my existing Vinayaka Chaturthi game. Keep ALL current game logic, speed, controls, physics tuning, and input handling EXACTLY as they are. Only change what I list below. Do not refactor, rename, or "improve" anything I have not asked for.
+
+1. IDOL POSITION
+- Move the Vinayaka (Ganesha) character from its current position to the HORIZONTAL CENTER of the canvas (x = canvas.width / 2).
+- The idol stays locked at that fixed x position for the whole run. It never moves left or right.
+- Vertical movement stays exactly as it is now — same gravity value, same jump/hop impulse, same tap response, same fall speed. Do not retune these numbers.
+
+2. POLES / OBSTACLES
+- Obstacles are vertical poles that scroll from the right edge toward the left, passing the centered idol.
+- Each pole pair has a top pole and a bottom pole with an open gap between them.
+- Keep the current scroll speed, spawn interval, and gap size values unchanged.
+- Style the poles to match the festival theme (decorated pillars / pandal poles), but do not change their collision boxes or dimensions.
+
+3. LADDU EATING + SIZE GROWTH
+- Spawn laddus that float in from the right at varying heights, scrolling at the same speed as the poles.
+- When the idol's hitbox overlaps a laddu, the laddu is eaten: remove it, increment a laddu counter, and INCREASE the idol's rendered size by a small step (about 6-8% per laddu).
+- Cap the maximum size at roughly 2x the starting size so it never fills the screen.
+- IMPORTANT: growing the visual size must NOT change gravity, jump strength, scroll speed, or difficulty. Only the drawn sprite scale and its collision radius grow. Gameplay feel must stay identical.
+- Play a short sound and show a small "+1 Laddu" popup on each eat.
+
+4. SMOOTH ANIMATIONS
+- Size growth must be ANIMATED, not instant: tween the scale from old size to new size over about 300ms using an ease-out curve. Never snap.
+- Add a golden sparkle/particle burst around the idol on each laddu eaten, fading out over ~0.5s.
+- Add a gentle idle bob: the idol sways up and down by a few pixels continuously using a sine wave, independent of the jump physics.
+- Add squash-and-stretch: slight vertical stretch on the upward hop, slight squash on the downward dip.
+- Run all animations off requestAnimationFrame with delta-time so they stay smooth and frame-rate independent.
+- Do not add any animation that alters the actual physics position or collision — visual only.
+
+5. SCOREBOARD
+- Show the live laddu count during play.
+- On game over, show: laddus eaten, final size reached, and best score.
+- Keep the existing restart flow unchanged.
+
+CONSTRAINTS
+- Single file, vanilla HTML/CSS/JS with canvas. No frameworks, no external assets, no CDN images.
+- Must work on mobile and desktop browsers.
+- Return the complete updated file, ready to paste and run.
