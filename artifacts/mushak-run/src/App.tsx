@@ -82,6 +82,13 @@ function seededFlakes(count: number) {
 }
 
 const flakes = seededFlakes(30);
+const snowballs = Array.from({ length: 12 }, (_, i) => ({
+  left: `${(i * 29 + 11) % 94}%`,
+  top: `${10 + ((i * 17) % 42)}%`,
+  delay: `${-((i % 7) * 1.15)}s`,
+  duration: `${5.5 + (i % 5) * .7}s`,
+  size: `${4 + (i % 3) * 2}px`,
+}));
 
 function MushakRider({ stage = 1, className = "", style }: { stage?: number; className?: string; style?: CSSProperties }) {
   return (
@@ -115,7 +122,10 @@ function Mountains({ dark = false }: { dark?: boolean }) {
 }
 
 function SceneDecor() {
-  return <>{flakes.map((flake, index) => <span className="flake" key={index} style={{ left: flake.left, top: flake.top, animationDelay: flake.delay, animationDuration: flake.duration, width: flake.size, height: flake.size }} />)}</>;
+  return <>
+    {flakes.map((flake, index) => <span className="flake" key={`flake-${index}`} style={{ left: flake.left, top: flake.top, animationDelay: flake.delay, animationDuration: flake.duration, width: flake.size, height: flake.size }} />)}
+    {snowballs.map((ball, index) => <span className="snowball" key={`snowball-${index}`} style={{ left: ball.left, top: ball.top, animationDelay: ball.delay, animationDuration: ball.duration, width: ball.size, height: ball.size }} aria-hidden="true" />)}
+  </>;
 }
 
 function Topbar({ onSettings, onHall, sound, onSound, compact = false }: { onSettings: () => void; onHall: () => void; sound: boolean; onSound: () => void; compact?: boolean }) {
@@ -340,7 +350,7 @@ function App() {
       nextLaddu: .72,
       stage: 1,
       obstacles: [{ id: obstacleIdRef.current++, x: .74, gapY: .5, gapSize: .3 }],
-      trail: [],
+      trail: [{ id: ladduIdRef.current++, x: .68, y: .42 }],
       effects: [],
     };
     setScore(runRef.current.score);
