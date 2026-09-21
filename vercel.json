@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm --filter @workspace/mushak-run run build",
+  "outputDirectory": "artifacts/mushak-run/dist/public",
+  "framework": null,
+  "installCommand": "pnpm install"
+}
