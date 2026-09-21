@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ArrowUp, ChevronLeft, CircleHelp, Eye, Home, Medal, Music2, Pause, Play, RotateCcw, Settings, Sparkles, Trophy, Volume2, VolumeX } from "lucide-react";
@@ -112,10 +114,10 @@ function getPoleScale(growthScale: number) {
 
 function MushakRider({ stage = 1, className = "", style }: { stage?: number; className?: string; style?: CSSProperties }) {
   const spriteMap: Record<number, string> = {
-    1: `${import.meta.env.BASE_URL}ganesha-stage-1.png`,
-    2: `${import.meta.env.BASE_URL}ganesha-stage-2.png`,
-    3: `${import.meta.env.BASE_URL}ganesha-stage-3.png`,
-    4: `${import.meta.env.BASE_URL}ganesha-mushak-rider.png`,
+    1: "/ganesha-stage-1.png",
+    2: "/ganesha-stage-2.png",
+    3: "/ganesha-stage-3.png",
+    4: "/ganesha-mushak-rider.png",
   };
   const spriteSrc = spriteMap[stage] || spriteMap[1];
 
@@ -135,7 +137,7 @@ function MushakRider({ stage = 1, className = "", style }: { stage?: number; cla
             {(stage === 1 || stage === 2 || stage === 3) && (
               <img
                 className="mushak-real-mount"
-                src={`${import.meta.env.BASE_URL}mushak-mount.png`}
+                src="/mushak-mount.png"
                 alt="Mushak the mouse mount"
                 draggable="false"
               />
