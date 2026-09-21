@@ -47,18 +47,34 @@ const STORAGE = {
 
 function readNumber(key: string, fallback: number) {
   if (typeof window === "undefined") return fallback;
-  const value = Number(window.localStorage.getItem(key));
-  return Number.isFinite(value) ? value : fallback;
+  try {
+    const item = window.localStorage.getItem(key);
+    if (item === null) return fallback;
+    const value = Number(item);
+    return Number.isFinite(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function readBool(key: string, fallback: boolean) {
   if (typeof window === "undefined") return fallback;
-  const value = window.localStorage.getItem(key);
-  return value === null ? fallback : value === "true";
+  try {
+    const value = window.localStorage.getItem(key);
+    return value === null ? fallback : value === "true";
+  } catch {
+    return fallback;
+  }
 }
 
 function save(key: string, value: string | number | boolean) {
-  if (typeof window !== "undefined") window.localStorage.setItem(key, String(value));
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(key, String(value));
+    } catch {
+      // Ignore quota/access errors in private mode
+    }
+  }
 }
 
 function readHall(): HallEntry[] {
@@ -81,8 +97,8 @@ function seededFlakes(count: number) {
   }));
 }
 
-const flakes = seededFlakes(30);
-const snowballs = Array.from({ length: 12 }, (_, i) => ({
+const flakes = seededFlakes(68);
+const snowballs = Array.from({ length: 22 }, (_, i) => ({
   left: `${(i * 29 + 11) % 94}%`,
   top: `${10 + ((i * 17) % 42)}%`,
   delay: `${-((i % 7) * 1.15)}s`,
@@ -90,18 +106,41 @@ const snowballs = Array.from({ length: 12 }, (_, i) => ({
   size: `${4 + (i % 3) * 2}px`,
 }));
 
+function getPoleScale(growthScale: number) {
+  return 1 + Math.min(1, Math.max(0, (growthScale - .84) / .84)) * .28;
+}
+
 function MushakRider({ stage = 1, className = "", style }: { stage?: number; className?: string; style?: CSSProperties }) {
+  const spriteMap: Record<number, string> = {
+    1: `${import.meta.env.BASE_URL}ganesha-stage-1.png`,
+    2: `${import.meta.env.BASE_URL}ganesha-stage-2.png`,
+    3: `${import.meta.env.BASE_URL}ganesha-stage-3.png`,
+    4: `${import.meta.env.BASE_URL}ganesha-mushak-rider.png`,
+  };
+  const spriteSrc = spriteMap[stage] || spriteMap[1];
+
   return (
-    <div className={`rider-sprite-shell stage-${stage} ${className}`} style={style} role="img" aria-label="Ganesha riding Mushak">
+    <div className={`rider-sprite-shell stage-${stage} ${className}`} style={style} role="img" aria-label={`Ganesha Stage ${stage}`}>
       <span className="rider-bob">
         <span className="rider-motion">
-          {stage === 4 && <span className="rider-aura" aria-hidden="true" />}
-          <img
-            className="rider-sprite"
-            src={`${import.meta.env.BASE_URL}ganesha-mushak-rider.png`}
-            alt="Ganesha riding Mushak"
-            draggable="false"
-          />
+          {stage >= 3 && <span className={`rider-aura ${stage === 4 ? "maha-aura" : "lover-aura"}`} aria-hidden="true" />}
+          <div className="rider-composite">
+            <img
+              key={`ganesha-stage-${stage}`}
+              className={`rider-sprite sprite-stage-${stage}`}
+              src={spriteSrc}
+              alt={`Ganesha Stage ${stage}`}
+              draggable="false"
+            />
+            {(stage === 1 || stage === 2 || stage === 3) && (
+              <img
+                className="mushak-real-mount"
+                src={`${import.meta.env.BASE_URL}mushak-mount.png`}
+                alt="Mushak the mouse mount"
+                draggable="false"
+              />
+            )}
+          </div>
         </span>
       </span>
     </div>
@@ -121,10 +160,10 @@ function Mountains({ dark = false }: { dark?: boolean }) {
   );
 }
 
-function SceneDecor() {
+function SceneDecor({ reducedMotion = false }: { reducedMotion?: boolean }) {
   return <>
-    {flakes.map((flake, index) => <span className="flake" key={`flake-${index}`} style={{ left: flake.left, top: flake.top, animationDelay: flake.delay, animationDuration: flake.duration, width: flake.size, height: flake.size }} />)}
-    {snowballs.map((ball, index) => <span className="snowball" key={`snowball-${index}`} style={{ left: ball.left, top: ball.top, animationDelay: ball.delay, animationDuration: ball.duration, width: ball.size, height: ball.size }} aria-hidden="true" />)}
+    {flakes.map((flake, index) => <span className={`flake ${reducedMotion ? "reduced-snow" : ""}`} key={`flake-${index}`} style={{ left: flake.left, top: flake.top, animationDelay: flake.delay, animationDuration: flake.duration, width: flake.size, height: flake.size }} />)}
+    {snowballs.map((ball, index) => <span className={`snowball ${reducedMotion ? "reduced-snow" : ""}`} key={`snowball-${index}`} style={{ left: ball.left, top: ball.top, animationDelay: ball.delay, animationDuration: ball.duration, width: ball.size, height: ball.size }} aria-hidden="true" />)}
   </>;
 }
 
@@ -206,10 +245,20 @@ function Tutorial({ onBegin, onBack, sound, onSound }: { onBegin: () => void; on
   );
 }
 
-function GameScene({ run, playerY, signature, countdown, onHop }: { run: RunState; playerY: number; signature: boolean; countdown: number | null; onHop: () => void }) {
+type CheerEvent = {
+  stage: number;
+  stageName: string;
+  badge: string;
+  cheerMessage: string;
+  subtitle: string;
+  color: string;
+};
+
+function GameScene({ run, playerY, signature, countdown, onHop, reducedMotion, levelCheer }: { run: RunState; playerY: number; signature: boolean; countdown: number | null; onHop: () => void; reducedMotion: boolean; levelCheer: CheerEvent | null }) {
   const phase = run.elapsed % 48;
   const timeClass = phase > 34 ? "night" : phase > 23 ? "dusk" : "";
   const tilt = Math.max(-18, Math.min(18, -run.velocity * 5200));
+  const poleScale = getPoleScale(run.growthScale);
   const playerStyle = {
     bottom: `calc(12% + ${Math.min(playerY, .68) * 100}%)`,
     "--growth-scale": run.growthScale,
@@ -219,7 +268,9 @@ function GameScene({ run, playerY, signature, countdown, onHop }: { run: RunStat
   return (
     <div className={`playfield ${timeClass}`} onPointerDown={onHop} role="application" aria-label="Mushak Run gameplay. Tap, click, or press Space to hop." data-testid="game-playfield">
       <Mountains dark={timeClass === "night"} />
-      <SceneDecor />
+      <SceneDecor reducedMotion={reducedMotion} />
+      <div className="snow-ground snow-ground-back" aria-hidden="true" />
+      <div className="snow-ground snow-ground-front" aria-hidden="true" />
       <div className="game-track" />
       {run.trail.map((laddu) => <div className="laddu" key={laddu.id} style={{ left: `${laddu.x * 100}%`, bottom: `calc(12% + ${laddu.y * 100}%)` }} data-testid={`laddu-${laddu.id}`} />)}
       {run.effects.map((effect) => (
@@ -232,20 +283,44 @@ function GameScene({ run, playerY, signature, countdown, onHop }: { run: RunStat
         </div>
       ))}
       {run.obstacles.map((obstacle) => {
-        const gapBottom = obstacle.gapY - obstacle.gapSize / 2;
-        const gapTop = obstacle.gapY + obstacle.gapSize / 2;
+        // Automatically adjust gap size based on Ganesha's size so player never gets stuck
+        const dynamicBonus = Math.max(0, (run.growthScale - 0.84) * 0.15);
+        const effectiveGapSize = obstacle.gapSize + dynamicBonus;
+        const gapBottom = obstacle.gapY - effectiveGapSize / 2;
+        const gapTop = obstacle.gapY + effectiveGapSize / 2;
         return (
           <div className="pipe-pair" key={obstacle.id} data-testid={`obstacle-${obstacle.id}`}>
-            <div className="pipe pipe-top" style={{ left: `${obstacle.x * 100}%`, height: `${Math.max(18, 88 - gapTop * 100)}%` }} />
-            <div className="pipe pipe-bottom" style={{ left: `${obstacle.x * 100}%`, height: `${Math.max(14, gapBottom * 100)}%` }} />
+            <div className="pipe pipe-top" style={{ left: `${obstacle.x * 100}%`, height: `${Math.max(10, 88 - gapTop * 100)}%`, "--pole-scale": poleScale } as CSSProperties}><span className="pipe-snow" /></div>
+            <div className="pipe pipe-bottom" style={{ left: `${obstacle.x * 100}%`, height: `${Math.max(10, gapBottom * 100)}%`, "--pole-scale": poleScale } as CSSProperties}><span className="pipe-snow" /></div>
           </div>
         );
       })}
       <MushakRider className={`runner stage-${run.stage}`} stage={run.stage} style={playerStyle} />
       <div className="tap-hint"><ArrowUp size={12} /> hop to keep the route</div>
       {countdown !== null && <div className="countdown-overlay" aria-live="assertive"><strong>{countdown}</strong><span>get ready</span></div>}
+      
+      {/* ─── Level Passed Cheer Banner Animation ─── */}
+      {levelCheer && (
+        <div className="level-cheer-banner" key={`cheer-${levelCheer.stage}`} aria-live="polite">
+          <div className="cheer-sparkles">
+            <Sparkles className="cheer-icon left" size={22} />
+            <Sparkles className="cheer-icon right" size={22} />
+          </div>
+          <div className="cheer-badge" style={{ backgroundColor: levelCheer.color }}>
+            <Trophy size={13} /> {levelCheer.badge}
+          </div>
+          <div className="cheer-title">{levelCheer.stageName}</div>
+          <div className="cheer-subtitle">{levelCheer.cheerMessage}</div>
+          <div className="cheer-confetti-container">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <span key={i} className={`cheer-confetti confetti-${i % 4}`} style={{ left: `${i * 8 + 4}%`, animationDelay: `${(i % 4) * 0.15}s` }} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {signature && <div className="signature"><div className="signature-card"><div className="seal"><Sparkles size={47} /></div><strong>Maha Ganesha</strong><span>the summit remembers courage</span></div></div>}
-      <div className="hud-message" key={`${run.stage}-${signature}`}>{signature ? "" : run.stage > 1 && run.elapsed < 2 ? STAGES[run.stage - 1].name : ""}</div>
+      <div className="hud-message" key={`${run.stage}-${signature}`}>{signature || levelCheer ? "" : run.stage > 1 && run.elapsed < 2 ? STAGES[run.stage - 1].name : ""}</div>
     </div>
   );
 }
@@ -321,6 +396,8 @@ function App() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [signature, setSignature] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [levelCheer, setLevelCheer] = useState<CheerEvent | null>(null);
+  const cheerTimeoutRef = useRef<number | null>(null);
   const runRef = useRef<RunState>({ playerY: .36, velocity: 0, distance: 0, score: 0, laddus: 0, speed: .24, elapsed: 0, liftTime: 0, growthScale: .84, growthTarget: .84, nextObstacle: .72, nextLaddu: .72, stage: 1, obstacles: [], trail: [], effects: [] });
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
@@ -335,6 +412,8 @@ function App() {
   };
 
   const startGame = useCallback(() => {
+    if (cheerTimeoutRef.current) clearTimeout(cheerTimeoutRef.current);
+    setLevelCheer(null);
     runRef.current = {
       playerY: .36,
       velocity: 0,
@@ -349,7 +428,7 @@ function App() {
       nextObstacle: .72,
       nextLaddu: .72,
       stage: 1,
-      obstacles: [{ id: obstacleIdRef.current++, x: .74, gapY: .5, gapSize: .3 }],
+      obstacles: [{ id: obstacleIdRef.current++, x: .74, gapY: .5, gapSize: .34 }],
       trail: [{ id: ladduIdRef.current++, x: .68, y: .42 }],
       effects: [],
     };
@@ -363,10 +442,14 @@ function App() {
   }, []);
 
   const playLadduChime = useCallback(() => {
-    if (!sound || typeof window === "undefined" || !window.AudioContext) return;
-    const context = audioContextRef.current ?? new window.AudioContext();
+    if (!sound || typeof window === "undefined") return;
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const context = audioContextRef.current ?? new AudioCtx();
     audioContextRef.current = context;
-    void context.resume();
+    if (context.state === "suspended") {
+      void context.resume();
+    }
     const now = context.currentTime;
     const oscillator = context.createOscillator();
     const gain = context.createGain();
@@ -382,6 +465,32 @@ function App() {
     oscillator.stop(now + .17);
   }, [sound]);
 
+  const playLevelUpFanfare = useCallback(() => {
+    if (!sound || typeof window === "undefined") return;
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const context = audioContextRef.current ?? new AudioCtx();
+    audioContextRef.current = context;
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+    const now = context.currentTime;
+    const chord = [523.25, 659.25, 783.99, 1046.50]; // C-E-G-C major victory arpeggio
+    chord.forEach((freq, i) => {
+      const osc = context.createOscillator();
+      const gain = context.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, now + i * 0.08);
+      gain.gain.setValueAtTime(0.0001, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.14, now + i * 0.08 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.32);
+      osc.connect(gain);
+      gain.connect(context.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.34);
+    });
+  }, [sound]);
+
   const beginFromMenu = () => {
     if (!readBool(STORAGE.tutorial, false)) setScreen("tutorial");
     else startGame();
@@ -390,10 +499,6 @@ function App() {
   const hop = useCallback(() => {
     if (screen === "playing" && countdown === null) {
       const run = runRef.current;
-      // Flap at any height, like a bird game, so Ganesha can stay in the
-      // center lane while the mountain gates move past him.
-      // Start with a gentle lift and keep applying it briefly so the click
-      // feels like a smooth upward glide instead of a sudden jump.
       run.velocity = Math.max(run.velocity, .00145);
       run.liftTime = .24;
       if (sound && typeof window !== "undefined" && "vibrate" in navigator) navigator.vibrate(7);
@@ -402,15 +507,39 @@ function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.code === "Space" || event.code === "ArrowUp") {
+      if (["Space", "ArrowUp", "KeyW"].includes(event.code)) {
         event.preventDefault();
-        hop();
+        if (screen === "playing") {
+          hop();
+        } else if (screen === "menu") {
+          beginFromMenu();
+        } else if (screen === "tutorial") {
+          save(STORAGE.tutorial, true);
+          startGame();
+        } else if (screen === "gameover") {
+          startGame();
+        } else if (screen === "paused") {
+          setScreen("playing");
+        }
+      } else if (event.code === "Enter") {
+        if (screen === "menu") {
+          beginFromMenu();
+        } else if (screen === "tutorial") {
+          save(STORAGE.tutorial, true);
+          startGame();
+        } else if (screen === "gameover") {
+          startGame();
+        } else if (screen === "paused") {
+          setScreen("playing");
+        }
       }
-      if (event.code === "Escape" && screen === "playing") setScreen("paused");
+      if (event.code === "Escape" && screen === "playing") {
+        setScreen("paused");
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [hop, screen]);
+  }, [hop, screen, startGame]);
 
   useEffect(() => {
     if (screen !== "playing" || countdown === null) return;
@@ -442,18 +571,20 @@ function App() {
         run.liftTime = Math.max(0, run.liftTime - dt / 60);
       }
       run.playerY += run.velocity * dt;
-      // Keep the arc gentle and readable instead of snapping down like a stone.
-      // Keep Ganesha centered for a moment, then let him drift down gently
-      // when the player gives no response.
       run.velocity -= .00006 * dt;
       if (run.playerY <= 0) { run.playerY = 0; run.velocity = 0; }
+      if (run.playerY >= .72) { run.playerY = .72; run.velocity = Math.min(0, run.velocity); }
       run.distance += run.speed * dt;
       run.nextObstacle -= run.speed * dt / 70;
       run.nextLaddu -= run.speed * dt / 70;
+      
+      // Dynamic pole gap adjusts automatically with Ganesha's growing size
       if (run.nextObstacle <= 0) {
         const pattern = Math.floor(run.distance / 80) % 3;
         const gapY = pattern === 1 ? .5 : pattern === 2 ? .58 : .44;
-        const gapSize = Math.max(.24, .3 - Math.floor(run.distance / 180) * .01);
+        const baseGap = Math.max(.28, .34 - Math.floor(run.distance / 200) * .008);
+        const growthAdjustment = Math.max(0, (run.growthScale - 0.84) * 0.22);
+        const gapSize = baseGap + growthAdjustment;
         run.obstacles.push({ id: obstacleIdRef.current++, x: 1.05, gapY, gapSize });
         run.nextObstacle = .72 + ((Math.floor(run.distance) % 2) * .08);
       }
@@ -464,11 +595,20 @@ function App() {
       }
       run.obstacles.forEach((obstacle) => { obstacle.x -= run.speed * dt / 70; });
       run.trail.forEach((laddu) => { laddu.x -= run.speed * dt / 70; });
-      const playerTop = run.playerY + .15;
+      
+      const riderScale = Math.min(1.2, run.growthScale / .84);
+      const playerHeight = 0.13 * riderScale;
+      const playerTop = run.playerY + playerHeight;
+      const playerLeft = .41 - (riderScale - 1) * .01;
+      const playerRight = .59 + (riderScale - 1) * .01;
+      const poleWidth = .085 * getPoleScale(run.growthScale);
+      
       const obstacleHit = run.obstacles.some((obstacle) => {
-        const gapBottom = obstacle.gapY - obstacle.gapSize / 2;
-        const gapTop = obstacle.gapY + obstacle.gapSize / 2;
-        const overlapsPlayer = obstacle.x < .61 && obstacle.x + .09 > .4;
+        const dynamicBonus = Math.max(0, (run.growthScale - 0.84) * 0.15);
+        const effectiveGap = obstacle.gapSize + dynamicBonus;
+        const gapBottom = obstacle.gapY - effectiveGap / 2;
+        const gapTop = obstacle.gapY + effectiveGap / 2;
+        const overlapsPlayer = obstacle.x < playerRight && obstacle.x + poleWidth > playerLeft;
         return overlapsPlayer && (playerTop > gapTop || run.playerY < gapBottom);
       });
       if (obstacleHit) {
@@ -479,10 +619,8 @@ function App() {
         setScreen("gameover");
         return;
       }
-      // Match the forgiving feel of a bird-style game: the laddu can touch
-      // either the rider or Mushak, and its visual position uses the same
-      // baseline as the physics.
-      const collected = run.trail.filter((laddu) => laddu.x < .63 && laddu.x > .39 && Math.abs((run.playerY + .045) - laddu.y) < .14);
+      
+      const collected = run.trail.filter((laddu) => laddu.x < .66 && laddu.x > .36 && Math.abs((run.playerY + .05) - laddu.y) < .18);
       if (collected.length) {
         run.laddus += collected.length;
         setLaddus(run.laddus);
@@ -496,11 +634,36 @@ function App() {
       run.obstacles = run.obstacles.filter((obstacle) => obstacle.x > -.12);
       run.trail = run.trail.filter((laddu) => laddu.x > -.08);
       run.score = Math.floor(run.distance * 1.12) + run.laddus * 25;
+      
       const newStage = run.laddus >= 20 ? 4 : run.laddus >= 12 ? 3 : run.laddus >= 5 ? 2 : 1;
       if (newStage > run.stage) {
         const was = run.stage;
         run.stage = newStage;
         setStage(newStage);
+        
+        // Trigger Cheering Level Passed Animation & Fanfare for all level advancements
+        const stageInfo = STAGES[newStage - 1];
+        const cheers = [
+          "",
+          "🎉 Great Hop! Snowline strength unlocked! 🎉",
+          "⚡ Joyful Speed! Golden laddu aura radiating! ⚡",
+          "🌟 Divine Summit Master! The mountains bow to you! 🌟",
+        ];
+        const cheerItem: CheerEvent = {
+          stage: newStage,
+          stageName: stageInfo.name,
+          badge: `STAGE ${newStage} CLEARED!`,
+          cheerMessage: cheers[newStage - 1] || "✨ Magnificent Run! Keep soaring! ✨",
+          subtitle: stageInfo.detail,
+          color: stageInfo.color,
+        };
+        setLevelCheer(cheerItem);
+        playLevelUpFanfare();
+        if (cheerTimeoutRef.current) clearTimeout(cheerTimeoutRef.current);
+        cheerTimeoutRef.current = window.setTimeout(() => {
+          setLevelCheer(null);
+        }, 2800);
+
         if (newStage === 4 && was < 4) {
           setSignature(true);
           window.setTimeout(() => setSignature(false), reducedMotion ? 1200 : 4300);
@@ -515,7 +678,7 @@ function App() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [countdown, playLadduChime, screen, reducedMotion]);
+  }, [countdown, playLadduChime, playLevelUpFanfare, screen, reducedMotion]);
 
   useEffect(() => {
     if (screen !== "gameover") return;
@@ -546,7 +709,7 @@ function App() {
           <div className="score-pills"><div className="score-pill"><small>Laddus</small><b data-testid="text-live-laddus">{laddus.toString().padStart(2, "0")}</b></div><div className="score-pill"><small>Growth</small><b data-testid="text-live-stage">{stage}/4</b></div><button className="icon-btn" onClick={() => setScreen(screen === "playing" ? "paused" : "playing")} aria-label={screen === "playing" ? "Pause game" : "Resume game"} data-testid="button-pause"><Pause size={17} /></button></div>
         </div>
         <StageRail current={stage} score={score} />
-         <GameScene run={displayedRun} playerY={playerY} signature={signature} countdown={countdown} onHop={hop} />
+        <GameScene run={displayedRun} playerY={playerY} signature={signature} countdown={countdown} onHop={hop} reducedMotion={reducedMotion} levelCheer={levelCheer} />
         {screen === "paused" && <div className="pause-overlay"><div className="pause-card"><div className="eyebrow">The route can wait</div><h2>Breath in the snow.</h2><p>Your run is paused exactly where you left it. Return when the next hop feels right.</p><div className="modal-actions"><button className="primary-btn" onClick={() => setScreen("playing")} data-testid="button-resume"><Play size={16} fill="currentColor" /> Continue run</button><button className="text-btn" onClick={() => setScreen("menu")} data-testid="button-quit-run"><Home size={15} /> Quit to menu</button></div></div></div>}
       </div>
     </div>
