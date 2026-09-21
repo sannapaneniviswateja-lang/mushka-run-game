@@ -1,5 +1,6 @@
 {
   "buildCommand": "pnpm --filter @workspace/mushak-run run build",
+  "outputDirectory": "artifacts/mushak-run/.next",
   "framework": "nextjs",
   "installCommand": "pnpm install"
 }
