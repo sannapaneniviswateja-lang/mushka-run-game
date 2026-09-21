@@ -201,20 +201,40 @@ function StageRail({ current, score }: { current: number; score: number }) {
 }
 
 function IntroSplash({ onStart }: { onStart: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    // Attempt play immediately; browser may allow muted autoplay
+    vid.play().catch(() => {
+      // Autoplay blocked — fallback background is visible behind video
+    });
+  }, []);
+
   return (
-    <main className="intro-splash-screen screen-enter">
+    <div className="intro-splash-screen screen-enter" role="main">
+      {/* Dark fallback — always visible behind everything */}
+      <div className="intro-bg-fallback" />
+
+      {/* Video — always at full opacity, shown as soon as browser loads it */}
       <div className="intro-video-backdrop">
         <video
-          src="/intro-video.mp4"
+          ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
+          preload="auto"
           className="intro-bg-video"
-        />
-        <div className="intro-overlay-gradient" />
+        >
+          <source src="/intro-video.mp4" type="video/mp4" />
+        </video>
       </div>
-      
+
+      {/* Dark radial gradient overlay */}
+      <div className="intro-overlay-gradient" />
+
       <div className="intro-content-card">
         <div className="eyebrow intro-badge">
           ✨ Welcome to Himalayan Mount Run ✨
@@ -233,11 +253,11 @@ function IntroSplash({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           data-testid="button-start-intro"
         >
-          <Play size={20} fill="currentColor" />
+          <Play size={22} fill="currentColor" />
           START THE GAME
         </button>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -739,7 +759,7 @@ function App() {
   const displayedRun = useMemo(() => runRef.current, [screen, score, laddus, stage, playerY]);
   const settingsProps = { sound, music, reducedMotion, onSound: () => toggle(STORAGE.sound, sound, setSound), onMusic: () => toggle(STORAGE.music, music, setMusic), onReducedMotion: () => toggle(STORAGE.reduced, reducedMotion, setReducedMotion) };
 
-  if (screen === "intro") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><IntroSplash onStart={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
+  if (screen === "intro") return <QueryClientProvider client={queryClient}><TooltipProvider><IntroSplash onStart={() => setScreen("menu")} /><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "menu") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><Menu best={best} sound={sound} onSound={() => toggle(STORAGE.sound, sound, setSound)} onStart={beginFromMenu} onSettings={() => setScreen("settings")} onHall={() => setScreen("hall")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "tutorial") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><Tutorial sound={sound} onSound={() => toggle(STORAGE.sound, sound, setSound)} onBegin={() => { save(STORAGE.tutorial, true); startGame(); }} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "settings") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><SettingsPage {...settingsProps} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
