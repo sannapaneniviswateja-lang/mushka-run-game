@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
 
-type Screen = "menu" | "tutorial" | "playing" | "paused" | "gameover" | "settings" | "hall";
+type Screen = "intro" | "menu" | "tutorial" | "playing" | "paused" | "gameover" | "settings" | "hall";
 type HallEntry = { score: number; laddus: number; stage: number; date: string };
 type Obstacle = { id: number; x: number; gapY: number; gapSize: number };
 type TrailLaddu = { id: number; x: number; y: number };
@@ -200,6 +200,47 @@ function StageRail({ current, score }: { current: number; score: number }) {
   );
 }
 
+function IntroSplash({ onStart }: { onStart: () => void }) {
+  return (
+    <main className="intro-splash-screen screen-enter">
+      <div className="intro-video-backdrop">
+        <video
+          src="/intro-video.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="intro-bg-video"
+        />
+        <div className="intro-overlay-gradient" />
+      </div>
+      
+      <div className="intro-content-card">
+        <div className="eyebrow intro-badge">
+          ✨ Welcome to Himalayan Mount Run ✨
+        </div>
+        <h1 className="hero-title intro-title">
+          Mushak Run
+          <br />
+          <em>Ganesha's Adventure</em>
+        </h1>
+        <p className="hero-copy intro-desc">
+          Fly through snowy mountain gates, collect glowing laddus, and evolve through 4 divine forms!
+        </p>
+
+        <button
+          className="primary-btn intro-start-btn"
+          onClick={onStart}
+          data-testid="button-start-intro"
+        >
+          <Play size={20} fill="currentColor" />
+          START THE GAME
+        </button>
+      </div>
+    </main>
+  );
+}
+
 function Menu({ best, sound, onSound, onStart, onSettings, onHall }: { best: number; sound: boolean; onSound: () => void; onStart: () => void; onSettings: () => void; onHall: () => void }) {
   return (
     <main className="app-shell screen-enter">
@@ -385,7 +426,7 @@ function Results({ score, laddus, stage, growthScale, best, isNewBest, onReplay,
 }
 
 function App() {
-  const [screen, setScreen] = useState<Screen>("menu");
+  const [screen, setScreen] = useState<Screen>("intro");
   const [best, setBest] = useState(() => readNumber(STORAGE.best, 0));
   const [hall, setHall] = useState<HallEntry[]>(readHall);
   const [sound, setSound] = useState(() => readBool(STORAGE.sound, true));
@@ -698,6 +739,7 @@ function App() {
   const displayedRun = useMemo(() => runRef.current, [screen, score, laddus, stage, playerY]);
   const settingsProps = { sound, music, reducedMotion, onSound: () => toggle(STORAGE.sound, sound, setSound), onMusic: () => toggle(STORAGE.music, music, setMusic), onReducedMotion: () => toggle(STORAGE.reduced, reducedMotion, setReducedMotion) };
 
+  if (screen === "intro") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><IntroSplash onStart={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "menu") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><Menu best={best} sound={sound} onSound={() => toggle(STORAGE.sound, sound, setSound)} onStart={beginFromMenu} onSettings={() => setScreen("settings")} onHall={() => setScreen("hall")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "tutorial") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><Tutorial sound={sound} onSound={() => toggle(STORAGE.sound, sound, setSound)} onBegin={() => { save(STORAGE.tutorial, true); startGame(); }} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
   if (screen === "settings") return <QueryClientProvider client={queryClient}><TooltipProvider><div className="mushak-app"><SettingsPage {...settingsProps} onBack={() => setScreen("menu")} /></div><Toaster /></TooltipProvider></QueryClientProvider>;
