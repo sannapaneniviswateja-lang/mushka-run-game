@@ -1,6 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @workspace/mushak-run run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "installCommand": "pnpm install"
+  "buildCommand": "npx vite build",
+  "outputDirectory": "dist/public",
+  "framework": null
 }

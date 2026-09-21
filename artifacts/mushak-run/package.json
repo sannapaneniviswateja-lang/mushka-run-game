@@ -4,15 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 5173",
-    "build": "next build",
-    "start": "next start -p 5173",
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "dependencies": {
-    "@workspace/api-zod": "workspace:*",
-    "@workspace/db": "workspace:*",
-    "next": "^15.1.0"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
