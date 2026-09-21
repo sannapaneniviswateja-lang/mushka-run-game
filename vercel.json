@@ -1,5 +1,6 @@
 {
   "buildCommand": "cd artifacts/mushak-run && npx vite build",
   "outputDirectory": "artifacts/mushak-run/dist/public",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null
 }

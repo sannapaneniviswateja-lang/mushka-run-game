@@ -338,16 +338,6 @@ importers:
         version: 3.25.76
 
   artifacts/mushak-run:
-    dependencies:
-      '@workspace/api-zod':
-        specifier: workspace:*
-        version: link:../../lib/api-zod
-      '@workspace/db':
-        specifier: workspace:*
-        version: link:../../lib/db
-      next:
-        specifier: ^15.1.0
-        version: 15.5.25(@babel/core@7.29.7)(@types/node@25.9.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
